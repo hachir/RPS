@@ -246,4 +246,49 @@ const UI = {
             $nameSpan.addClass("badge-primary");
         }
         let $chatWindow = $("#chat-window");
-   
+        // Append message to the chat window
+        $chatWindow.append($p);
+        // Force chat window to scroll to the bottom on overflow
+        $chatWindow.prop("scrollTop", $chatWindow.prop("scrollHeight"));
+    },
+    showUsernameModal: function () {
+        // Create popup, user must enter a username
+        $("#username-select").modal({backdrop: 'static', keyboard: false});
+        $("#username-submit").on("click", function () {
+            // Set username in player card and game object
+            GAME.userName = $("#username-input").val();
+            $("#player-title").text(GAME.userName);
+            // Create user in firebase
+            DATA_OBJ.createUser();
+        });
+    },
+    updateOpponentTitle: function(name) {
+        $("#opponent-title").text(name);
+    },
+    updateOpponentMove: function(opponentMove) {
+        // Create image
+        let img = $('<img />', {
+            src: `assets/images/${opponentMove}.png`,
+            alt: opponentMove
+        });
+        // Update opponent image
+        $("#opponent-selection").html(img);
+        // Update opponent text
+        $("#opponent-text").text(opponentMove);
+    },
+    updateScore: function(winner, score) {
+        if (winner === GAME.userName) {
+            $("#player-wins").text(score);
+        } else {
+            $("#opponent-wins").text(score);
+        }
+    },
+    enableSelectionButtons() {
+        $("#move-selections").find("button").prop("disabled", false);
+    },
+    disableSelectionButtons() {
+        $("#move-selections").find("button").prop("disabled", true);
+    }
+};
+
+
