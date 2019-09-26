@@ -132,3 +132,118 @@ const DATA_OBJ = {
     registerGameUpdates: function () {
         database.ref("/game").on("value", function (snapshot) {
             if (!snapshot.val()) {
+                // reset game if users disconnect
+                GAME.resetMoves();
+            }
+        });
+    },
+    registerChatUpdates: function () {
+        database.ref("/chat").on("child_added", function (snapshot) {
+            let message = snapshot.val();
+            UI.appendMessage(message.user, message.message)
+        });
+    },
+    createUser: function() {
+        let playerRefKey = this.playersRef.push();
+        // Set user details
+        playerRefKey.set({userName: GAME.userName, connected: true});
+
+        // Remove player when connection ends
+        playerRefKey.onDisconnect().remove();
+    },
+    createGame: function() {
+        // Create and save new game
+        let game = {
+            moves: null,
+            score: 0
+        };
+        // create game in DB
+        let gameRefKey = database.ref("/game/" + GAME.userName);
+        gameRefKey.set(game);
+        gameRefKey.onDisconnect().remove();
+    },
+    createChat: function() {
+        // Initialize default chat
+        let chat = {
+            user:"System",
+            message:"Game started. Have fun!"
+        };
+        // create chat in DB
+        let chatRefKey = database.ref("/chat/init");
+        chatRefKey.set(chat);
+        database.ref("/chat").onDisconnect().remove();
+    },
+    addMessageToDB: function (user, message) {
+        database.ref("/chat").push({user: user, message: message});
+
+    },
+    saveMove: function(move) {
+        database.ref("/game/moves/" + GAME.userName).set({move: move});
+    }
+};
+
+const UI = {
+    init: function () {
+        this.registerSelectionButtons();
+        this.registerChatSendButton();
+    },
+    resetMoves: function () {
+        // Clear images and opponent text
+        $(".move-display").empty();
+        $("#opponent-text").empty();
+        // Enable buttons
+        this.enableSelectionButtons();
+    },
+    registerSelectionButtons: function () {
+        $("#move-selections").find("button").on("click", function () {
+            // Get value of the move: rock, paper, or scissors
+            let selection = $(this).attr("data-move");
+            // Choose image based on selection
+            let img = $('<img />', {
+                src: `assets/images/${selection}.png`,
+                alt: selection
+            });
+            $("#player-selection").html(img);
+            // Disable buttons until the round is over
+            UI.disableSelectionButtons();
+            // Save move to database
+            DATA_OBJ.saveMove(selection);
+        });
+    },
+    registerChatSendButton: function () {
+        $("#send-button").on("click", function () {
+            let $messageInput = $("#message");
+            let messageText = $messageInput.val();
+            // Clear input on send
+            $messageInput.val("");
+            DATA_OBJ.addMessageToDB(GAME.userName, messageText);
+        });
+
+        // Allow enter key to call submit the message
+        $('#message').keypress(function (e) {
+            if (e.which === 13) {
+                $('#send-button').click();
+            }
+        });
+    },
+    appendMessage: function (user, message) {
+        let $p = $("<p>");
+        let $nameSpan = $("<span>");
+        $p.append($nameSpan);
+        // Username span with bootstrap badge
+        $nameSpan.text(`${user}: `);
+        $nameSpan.addClass("badge");
+
+        // Add message
+        $p.append(`  ${message}`);
+        $p.addClass("chat-message");
+
+        // Messages from other users appear to the right in the chat
+        if (user !== GAME.userName) {
+            $p.css("text-align", "right");
+            $nameSpan.addClass("badge-secondary");
+        } else {
+            $nameSpan.addClass("badge-primary");
+        }
+        let $chatWindow = $("#chat-window");
+   
