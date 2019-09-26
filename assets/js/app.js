@@ -292,3 +292,10 @@ const UI = {
 };
 
 
+window.onload = function () {
+    // Show username selection modal
+    UI.showUsernameModal();
+    // Initialize database and UI event handlers
+    DATA_OBJ.init();
+    UI.init();
+};
